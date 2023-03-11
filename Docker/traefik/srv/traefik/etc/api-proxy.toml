@@ -1,0 +1,35 @@
+## Dynamic File for ******* Services
+[http]
+    [http.routers.api-router] # 3rd party api that have ip whitelist, this is proxy to have more control\bypass it
+        entrypoints = ["web"]
+        rule = "Host(`endpoint3.mydomain.tld`)"
+        service = "api-srv"
+#        middlewares = ["api-srv-whitelistip"]
+#        [http.routers.api-router.tls]
+    # [http.routers.api2-router]
+    #     entrypoints = ["web"]
+    #     rule = "Host(`api2.mydomain.tld`)"
+    #     service = "api2-srv"
+
+    [http.services]
+        [http.services.api-srv.loadbalancer]
+        passHostHeader = true
+        [[http.services.api-srv.loadBalancer.servers]]
+        url = "https://api.REDACTED.com/"
+        ### Doesn't work
+        # [http.services.api2-srv.loadbalancer]
+        # passHostHeader = false
+        # [[http.services.api2-srv.loadBalancer.servers]]
+        # url = "https://api2.REDACTED.com/"
+
+
+    [http.middlewares]
+#        [http.middlewares.bauth.basicAuth]
+#            users = [
+#                "username1:$apr1$yZePsu/O$YiLiJ.Gg6I.nL3ffQYP8i." # echo "password" | openssl passwd -apr1 -stdin
+#            ]
+#            removeHeader = true
+        [http.middlewares.api-srv-whitelistip.ipWhiteList]
+            sourceRange = ["172.16.10.10", "192.168.10.10"]
+        [http.middlewares.adminsonly.ipWhiteList]
+            sourceRange = ["172.16.10.10"]

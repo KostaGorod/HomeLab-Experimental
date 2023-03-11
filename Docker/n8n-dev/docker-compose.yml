@@ -1,0 +1,61 @@
+version: '3.5'
+
+services:
+
+  n8n_dev:
+    image: n8nio/n8n:0.179.0-debian
+    container_name: n8n_dev
+    restart: always
+    environment:
+#      - N8N_BASIC_AUTH_ACTIVE=true
+#      - N8N_BASIC_AUTH_USER
+#      - N8N_BASIC_AUTH_PASSWORD
+#      - N8N_PORT=5678
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - NODE_FUNCTION_ALLOW_EXTERNAL=exiftool-vendored
+      - NODE_ENV=dev
+      - WEBHOOK_URL=https://${WEBHOOK_URL}
+    networks:
+      - traefik-proxy
+      - default
+#    ports:
+#      - "5678:5678"
+    volumes:
+      - /docker/n8n_dev:/home/node/.n8n
+      - /docker/n8n_dev_files/images:/data/images
+      
+      #exiftool-vendored dependencies
+      - /docker/n8n_dev_modules/node_modules/exiftool-vendored:/usr/local/lib/node_modules/exiftool-vendored
+      - /docker/n8n_dev_modules/node_modules/batch-cluster:/usr/local/lib/node_modules/batch-cluster
+      - /docker/n8n_dev_modules/node_modules/luxon:/usr/local/lib/node_modules/luxon
+      - /docker/n8n_dev_modules/node_modules/he:/usr/local/lib/node_modules/he
+      - /docker/n8n_dev_modules/node_modules/tz-lookup:/usr/local/lib/node_modules/tz-lookup
+      - /docker/n8n_dev_modules/node_modules/exiftool-vendored.pl:/usr/local/lib/node_modules/exiftool-vendored.pl
+      - /docker/n8n_dev_modules/node_modules/@types/luxon:/usr/local/lib/node_modules/@types/luxon
+      - /docker/n8n_dev_modules/node_modules/.bin/he:/usr/local/lib/node_modules/.bin/he
+      #end of exiftool-vendored dependencies
+      
+    labels:
+      - "traefik.enable=true"
+      - traefik.http.middlewares.schttps.redirectscheme.scheme=https
+     
+      #http WWW
+      - traefik.http.routers.n8n_dev.entrypoints=web
+      - traefik.http.routers.n8n_dev.rule= Host(`${WEBHOOK_URL}`) && (PathPrefix(`/webhook-test`) || PathPrefix(`/webhook`))
+      - traefik.http.routers.n8n_dev.middlewares=securityHeaders@file
+      #http Internal
+      #- traefik.http.routers.n8n_dev_internal.entrypoints=web
+      #- traefik.http.routers.n8n_dev_internal.rule= Host(`n8n.internal.mydomain.tld`) || Host(`n8n`)
+      #- traefik.http.routers.n8n_dev_internal.middlewares=redirect-to-https@file
+      #HTTPS Internal
+      - traefik.http.routers.n8n_dev_internal_https.entrypoints=web-secure
+      - traefik.http.routers.n8n_dev_internal_https.tls=true
+      - traefik.http.routers.n8n_dev_internal_https.rule=Host(`n8n.internal.mydomain.tld`) || Host(`n8n`)
+
+#      - "traefik.http.services.n8n_dev.loadbalancer.server.port=5679"
+      
+    command: /bin/sh -c "sleep 5; n8n start"
+
+networks:
+  traefik-proxy:
+    external: true

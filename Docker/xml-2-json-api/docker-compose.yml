@@ -1,0 +1,37 @@
+version: '3.5'
+
+services:
+
+  REDACTED_dev_proxy:
+    image: REDACTED_dev_proxy:0.31
+    container_name: REDACTED_dev_proxy
+    restart: always
+    networks:
+      - traefik-proxy
+      - default
+    environment:
+      - dev_uname=${dev_uname}
+      - dev_upass=${dev_upass}
+      - uname=${uname}
+      - upass=${upass}
+    extra_hosts:
+      - "endpoint3.mydomain.tld:	172.18.0.5" # NOTICE: ip could change after restart, life happend so I didn't get to it
+#    ports:
+#      - "5678:5678"
+    labels:
+      - traefik.enable=true
+#      - traefik.http.middlewares.schttps.redirectscheme.scheme=https
+     
+      #http WWW
+      - traefik.http.routers.REDACTED_dev_proxy.entrypoints=web
+      - traefik.http.routers.REDACTED_dev_proxy.rule= Host(`REDACTED-dev.mydomain.tld`) && (PathPrefix(`/REDACTED_xml/api/REDACTED`))
+      - traefik.http.routers.REDACTED_dev_proxy.middlewares=securityHeaders@file
+
+
+#      - "traefik.http.services.n8n_dev.loadbalancer.server.port=5679"
+      
+#    command: /bin/sh -c "sleep 5; n8n start"
+
+networks:
+  traefik-proxy:
+    external: true
